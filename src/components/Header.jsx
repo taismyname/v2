@@ -19,7 +19,7 @@ export default function Header({ user, partner, vehicle }) {
         {user ? (
           <div className="text-right">
             <p className="font-bold text-sm sm:text-base">Xin chào, {user}</p>
-            <p className="text-xs sm:text-sm opacity-90">ft {partner}, xe {vehicle}</p>
+            <p className="text-xs sm:text-sm opacity-90">ft {partner ?? "…"}, xe {vehicle ?? "…"}</p>
           </div>
         ) : (
           <span className="text-xs opacity-70">
