@@ -1,56 +1,116 @@
-// src/components/RouteCard.jsx
-import React from "react";
-import { Link } from "react-router-dom";
+// src/pages/MainPage.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import RouteCard from "../components/RouteCard";
+import ProtectedRoute from "../components/ProtectedRoute";
+import { db } from "../services/firebase";
+import { collection, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
-export default function RouteCard({ route, done, onDone }) {
+export default function MainPage() {
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-4 flex flex-col w-full max-w-sm
-                    border border-zinc-100 transition-transform hover:-translate-y-1">
-      <h2 className="text-lg font-bold mb-2">{route.title}</h2>
+    <ProtectedRoute>
+      <MainInner />
+    </ProtectedRoute>
+  );
+}
 
-      <div className="text-sm space-y-1 mb-3">
-        <p><span className="font-semibold">Từ:</span> {route.from}</p>
-        <p><span className="font-semibold">Đến:</span> {route.to}</p>
-        <p><span className="font-semibold">Quãng đường:</span> {route.distance} km, dự kiến {route.time} h</p>
-        <p className="text-zinc-500">
-          Cần hoàn thành {route.remaining ? "còn" : "không còn"} lộ trình nữa đến đích
-        </p>
-      </div>
+function MainInner() {
+  const nav = useNavigate();
+  const [user, setUser] = useState(() => {
+    const raw = localStorage.getItem("stUser");
+    return raw ? JSON.parse(raw) : null;
+  });
+  const [routes, setRoutes] = useState([]);
+  const [routesDone, setRoutesDone] = useState(new Set());
 
-      <div className="grid grid-cols-2 gap-3 mt-auto">
-        {/* Nút mở Google Maps bằng link trong Firestore */}
-        <a
-          href={route.mapLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="col-span-2 rounded-xl py-2 font-semibold text-white text-center
-                     bg-gradient-to-r from-sky-500 to-blue-600 hover:brightness-110 active:scale-95"
-        >
-          Mở Google Maps luôn nè
-        </a>
+  // Listen routes
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "routes"), (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setRoutes(list);
+    });
+    return () => unsub();
+  }, []);
 
-        {/* Xem chi tiết */}
-        <Link
-          to={`/route/${route.id}`}
-          className="rounded-xl py-2 text-center font-semibold
-                     bg-zinc-100 hover:bg-zinc-200 active:scale-95"
-        >
-          Xem chi tiết
-        </Link>
+  // Listen user routesDone in realtime
+  useEffect(() => {
+    if (!user) return;
+    const ref = doc(db, "users", user.username);
+    const unsub = onSnapshot(ref, (snap) => {
+      const u = snap.data() || {};
+      const arr = Array.isArray(u.routesDone) ? u.routesDone : [];
+      setRoutesDone(new Set(arr));
+      // sync header info if changed
+      const merged = {
+        ...user,
+        partner: u.partner || user.partner,
+        vehicle: u.vehicle || user.vehicle,
+      };
+      setUser(merged);
+      localStorage.setItem("stUser", JSON.stringify(merged));
+    });
+    return () => unsub();
+  }, [user?.username]);
 
-        {/* Đánh dấu hoàn thành */}
-        <button
-          onClick={() => onDone(route.id)}
-          disabled={!!done}
-          className={`rounded-xl py-2 font-semibold text-white active:scale-95
-          ${done
-              ? "bg-zinc-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-emerald-500 to-green-600 hover:brightness-110"
-          }`}
-        >
-          {done ? "Đã xong" : "Ôker (Đã xong)"}
-        </button>
-      </div>
+  const onOpenMap = (r) => {
+  if (r.mapLink) {
+    window.open(r.mapLink, "_blank"); // mở link có sẵn trong Firestore
+  } else {
+    alert("Chưa có link bản đồ cho lộ trình này");
+  }
+};
+
+  const onDone = async (routeId) => {
+    if (!user) return;
+    const ref = doc(db, "users", user.username);
+    const snap = await getDoc(ref);
+    const u = snap.data() || {};
+    const arr = new Set(Array.isArray(u.routesDone) ? u.routesDone : []);
+    if (!arr.has(routeId)) arr.add(routeId);
+    await updateDoc(ref, { routesDone: Array.from(arr) });
+  };
+
+  const headerProps = useMemo(
+    () => ({
+      user: user?.username,
+      partner: user?.partner,
+      vehicle: user?.vehicle,
+    }),
+    [user]
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-zinc-50">
+      <Header {...headerProps} />
+
+      <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {routes.map((r) => (
+            <RouteCard
+              key={r.id}
+              route={r}
+              done={routesDone.has(r.id)}
+              onDone={onDone}
+              onOpenMap={onOpenMap}
+            />
+          ))}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => nav("/realtime")}
+            className="rounded-full px-6 py-2.5 font-semibold text-white
+                       bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-lg
+                       hover:brightness-110 active:scale-95"
+          >
+            realtime
+          </button>
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }
