@@ -54,12 +54,13 @@ function MainInner() {
     return () => unsub();
   }, [user?.username]);
 
-  const onOpenMap = (r) => {
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
-      r.from
-    )}&destination=${encodeURIComponent(r.to)}`;
-    window.open(url, "_blank");
-  };
+ const onOpenMap = (r) => {
+  if (r.mapLink) {
+    window.open(r.mapLink, "_blank"); // mở link có sẵn trong Firestore
+  } else {
+    alert("Chưa có link bản đồ cho lộ trình này");
+  }
+};
 
   const onDone = async (routeId) => {
     if (!user) return;

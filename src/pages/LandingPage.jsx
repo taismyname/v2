@@ -22,10 +22,10 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-white/70 rounded-2xl" />
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
             <p className="text-zinc-800 text-base sm:text-lg">
-              Dạo mạnh nhất 2025 chính thức gọi tên
+              đây là chuyến đi thứ mấy của mình ròi nhỉ
             </p>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-wide text-blue-800 mt-1">
-              SÓC TRĂNG TOUR 2025
+              GIA ĐÌNH HEHE - DORAEMON 2025
             </h1>
 
             <button
