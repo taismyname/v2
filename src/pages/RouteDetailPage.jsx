@@ -32,11 +32,8 @@ function DetailInner() {
   }, [id]);
 
   const openMap = () => {
-    if (!route) return;
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
-      route.from
-    )}&destination=${encodeURIComponent(route.to)}`;
-    window.open(url, "_blank");
+    if (!route || !route.mapLink) return;
+    window.open(route.mapLink, "_blank");
   };
 
   const handleUpload = async (e) => {
@@ -58,7 +55,6 @@ function DetailInner() {
 
       setLastUrl(url);
 
-      // cũng có thể đánh dấu done cho route này
       const uref = doc(db, "users", user.username);
       const usnap = await getDoc(uref);
       const data = usnap.data() || {};
@@ -97,7 +93,7 @@ function DetailInner() {
               title="map"
               className="w-full h-full"
               loading="lazy"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(route.to)}&output=embed`}
+              src={route.mapLink ? route.mapLink.replace("/maps.app.goo.gl/", "https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=") : ""}
             />
           </div>
 
