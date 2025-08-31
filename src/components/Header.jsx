@@ -23,7 +23,7 @@ export default function Header({ user, partner, vehicle }) {
           </div>
         ) : (
           <span className="text-xs opacity-70">
-            {location.pathname === "/login" ? "Đăng nhập để bắt đầu" : ""}
+            {location.pathname === "/login" ? "Đăng nhập mới coi được" : ""}
           </span>
         )}
       </div>
